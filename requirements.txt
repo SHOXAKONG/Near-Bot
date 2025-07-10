@@ -1,0 +1,8 @@
+asgiref==3.8.1
+Django==5.2.3
+djangorestframework==3.16.0
+python-decouple==3.8
+djangorestframework-simplejwt==5.5.0
+pyTelegramBotAPI==4.27.0
+psycopg2-binary==2.9.10
+Pillow==11.3.0
