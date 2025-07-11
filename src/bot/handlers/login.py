@@ -38,7 +38,7 @@ def process_login_password(message, bot):
     bot.send_message(message.chat.id, utils.t(profile, "Tekshirilmoqda...", "Проверка..."))
 
     is_success, response_message = api_client.login_and_link_profile(
-        telegram_id=message.chat.id,
+        profile=profile,
         email=email,
         password=password
     )
