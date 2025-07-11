@@ -28,7 +28,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 User = get_user_model()
 
-email = config('DJANGO_SUPERUSER_EMAIL', default='admin@info.com')
+username = config('DJANGO_SUPERUSER_USERNAME', default='admin')
 
 try:
     password = config('DJANGO_SUPERUSER_PASSWORD')
