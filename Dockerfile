@@ -5,7 +5,6 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR /app
 
-# O'ZGARISH: Kerakli paketlar qo'shildi
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
@@ -26,4 +25,4 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
-EXPOSE 8000
+EXPOSE 8001
