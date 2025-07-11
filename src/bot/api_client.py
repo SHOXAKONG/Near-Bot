@@ -1,7 +1,6 @@
 import os
-
-import jwt
 import requests
+import jwt
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from django.conf import settings
@@ -46,10 +45,8 @@ def make_authenticated_request(profile: TelegramProfile, method: str, url: str, 
     response = session.request(method, url, **kwargs)
 
     if response.status_code == 401:
-        print("Access token yaroqsiz. Yangilanmoqda...")
         new_token = refresh_access_token(profile)
         if new_token:
-            print("Token muvaffaqiyatli yangilandi. So'rov qayta yuborilmoqda.")
             headers['Authorization'] = f'Bearer {new_token}'
             response = session.request(method, url, **kwargs)
         else:
@@ -58,42 +55,55 @@ def make_authenticated_request(profile: TelegramProfile, method: str, url: str, 
     return response
 
 
-def login_and_link_profile(telegram_id: int, email: str, password: str, profile: TelegramProfile):
+def login_and_link_profile(profile: TelegramProfile, email: str, password: str):
     LOGIN_URL = f"{settings.BASE_URL}/{profile.language}/api/auth/login/"
+    # print(f"1. Login uchun so'rov yuborilmoqda: {LOGIN_URL}")
 
     try:
-        login_response = requests.post(LOGIN_URL, json={'email': email, 'password': password})
+        login_response = requests.post(LOGIN_URL, json={'email': email, 'password': password}, timeout=10)
+        # print(f"2. API'dan javob olindi. Status: {login_response.status_code}, Javob: {login_response.text}")
+
         if login_response.status_code != 200:
-            return (False, "Login yoki parol xato.")
+            try:
+                error_detail = login_response.json().get('detail', "Login yoki parol xato.")
+                return (False, error_detail)
+            except:
+                return (False, "Login yoki parol xato.")
 
         tokens = login_response.json()
         access_token = tokens.get('access')
         refresh_token = tokens.get('refresh')
+        # print("3. API'dan tokenlar olindi.")
 
         if not access_token:
             return (False, "API javobida token topilmadi.")
 
         try:
+            # print("4. Tokenni ochishga harakat qilinmoqda...")
             decoded_data = jwt.decode(access_token, options={"verify_signature": False})
             near_user_id = decoded_data.get('user_id')
+            # print(f"5. Token ochildi. Token ichidagi User ID: {near_user_id}")
 
             if not near_user_id:
                 raise ValueError("Token tarkibida user_id topilmadi.")
-
         except (jwt.DecodeError, ValueError) as e:
-            print(f"Tokenni ochishda xatolik: {e}")
-            return (False, "Tizimga kirishda ichki xatolik yuz berdi.")
+            # print(f"TOKEN OCHISHDA XATOLIK: {e}")
+            return (False, "Tizimga kirishda ichki xatolik yuz berdi (token xatosi).")
 
+        # print(f"6. Ma'lumotlar profil ob'ektiga yuklanmoqda: near_user_id={near_user_id}")
         profile.near_user_id = near_user_id
         profile.access_token = access_token
         profile.refresh_token = refresh_token
-        profile.save()
+
+        # print("7. Profil ob'ekti yangilandi. Muvaffaqiyatli javob qaytarilmoqda.")
         return (True, "Muvaffaqiyatli! Profilingiz tizimga bog'landi.")
 
     except requests.exceptions.RequestException as e:
-        return (False, f"API bilan bog'lanishda xatolik: {e}")
+        # print(f"API'GA ULANISHDA XATOLIK: {e}")
+        return (False, "Tizim serveriga ulanib bo'lmadi.")
     except Exception as e:
-        return (False, f"Profilni saqlashda noma'lum xatolik: {e}")
+        # print(f"LOGIN JARAYONIDA KUTILMAGAN XATOLIK: {e}")
+        return (False, "Noma'lum ichki xatolik yuz berdi.")
 
 
 def register_user(lang: str, data: dict):
@@ -121,8 +131,6 @@ def get_user_data_from_api(profile: TelegramProfile):
         return None
 
     user_id = profile.near_user_id
-    print(profile)
-    print(user_id)
     url = f"{settings.BASE_URL}/{profile.language}/api/auth/users-data/{user_id}/"
     return make_authenticated_request(profile, 'get', url)
 
