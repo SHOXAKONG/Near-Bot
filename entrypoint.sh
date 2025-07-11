@@ -35,17 +35,16 @@ try:
 except ImproperlyConfigured:
     password = None
 
-# Check for user existence using the email field.
-if not User.objects.filter(email=email).exists():
+if not User.objects.filter(username=username).exists():
     if not password:
         print("DJANGO_SUPERUSER_PASSWORD not found in environment or .env file. Cannot create superuser.")
         exit(1)
 
-    print(f"Creating superuser for email '{email}'")
-    User.objects.create_superuser(email=email, password=password)
+    print(f"Creating superuser for username '{username}'")
+    User.objects.create_superuser(username=username, password=password)
     print("Superuser created successfully.")
 else:
-    print(f"Superuser with email '{email}' already exists. Skipping.")
+    print(f"Superuser with email '{username}' already exists. Skipping.")
 EOF
 
 echo "Collecting static files"
