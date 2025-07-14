@@ -118,7 +118,7 @@ STATIC_URL = 'static/'
 STATIC_ROOT = (os.path.join('staticfiles'))
 
 BOT_TOKEN = config('BOT_TOKEN')
-BASE_URL = 'https://8c29ef665f76.ngrok-free.app'
+BASE_URL = config('BASE_URL')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
