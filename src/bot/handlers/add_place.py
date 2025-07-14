@@ -1,10 +1,8 @@
 import json
-
 import requests
 import telebot
 import os
 import tempfile
-
 from src.config import settings
 from ..models import TelegramProfile
 from .. import utils, keyboards, api_client

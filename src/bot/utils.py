@@ -17,27 +17,28 @@ def decode_token(token: str) -> dict:
         return {}
 
 
-def convert_image(image_bytes: bytes, target_format: str = 'JPEG', quality: int = 85) -> bytes:
-
+def convert_image(image_bytes: bytes, target_format: str = 'JPEG', quality: int = 85, size: int = 300) -> bytes:
     try:
         image = Image.open(io.BytesIO(image_bytes))
 
+        width, height = image.size
+        min_dim = min(width, height)
+        left = (width - min_dim) / 2
+        top = (height - min_dim) / 2
+        right = (width + min_dim) / 2
+        bottom = (height + min_dim) / 2
+        image = image.crop((left, top, right, bottom))
+
+        image = image.resize((size, size), Image.ANTIALIAS)
+
+        if target_format.upper() == 'JPEG' and image.mode in ('RGBA', 'LA', 'P'):
+            image = image.convert('RGB')
+
         output_buffer = io.BytesIO()
+        image.save(output_buffer, format=target_format.upper(), quality=quality, optimize=True)
 
-        if target_format.upper() == 'JPEG':
-            if image.mode in ('RGBA', 'LA', 'P'):
-                image = image.convert('RGB')
-
-            image.save(output_buffer, format='JPEG', quality=quality, optimize=True)
-
-        elif target_format.upper() == 'PNG':
-            image.save(output_buffer, format='PNG', optimize=True)
-
-        else:
-            raise ValueError("Qo'llab-quvvatlanadigan formatlar: 'JPEG' yoki 'PNG'")
-
-        converted_bytes = output_buffer.getvalue()
-        return converted_bytes
+        return output_buffer.getvalue()
 
     except Exception as e:
+        print(f"[convert_image] Error processing image: {e}")
         return image_bytes
