@@ -163,7 +163,7 @@ def become_entrepreneur(profile: TelegramProfile):
     return make_authenticated_request(profile, 'post', url)
 
 
-def log_search_activity(profile: TelegramProfile, category_id: int):
+def log_search_activity(profile: TelegramProfile, category_id: int, lat, lon):
     if not profile.near_user_id:
         return None
     url = f"{settings.BASE_URL}/{profile.language}/api/search-history/"
