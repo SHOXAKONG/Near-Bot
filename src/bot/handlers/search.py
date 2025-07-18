@@ -128,7 +128,6 @@ def _perform_search(message, bot, profile):
         show_main_menu(message, bot)
         return
 
-    api_client.log_search_activity(profile, category_id)
     response = api_client.search_places(profile, lat, lon, int(category_id))
 
     if response and response.status_code == 200:
@@ -139,6 +138,8 @@ def _perform_search(message, bot, profile):
                                      "К сожалению, поблизости ничего не найдено по этой категории."))
             show_main_menu(message, bot)
         else:
+            api_client.log_search_activity(profile, category_id, lat, lon)
+
             profile.temp_data['places'] = places
             profile.save()
             show_paginated_place(message, bot, index=0)
@@ -227,7 +228,6 @@ def handle_reshow_categories(call, bot):
         print(f"Could not delete message, but proceeding. Error: {e}")
 
     response = api_client.get_categories(profile)
-    # print(response)
 
     if response and response.status_code == 200:
         categories = response.json()

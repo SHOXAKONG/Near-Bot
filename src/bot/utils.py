@@ -4,8 +4,10 @@ import base64
 from PIL import Image
 import io
 
+
 def t(profile, key_uz: str, key_ru: str) -> str:
     return key_uz if profile.language == 'uz' else key_ru
+
 
 def decode_token(token: str) -> dict:
     try:
@@ -29,7 +31,7 @@ def convert_image(image_bytes: bytes, target_format: str = 'JPEG', quality: int 
         bottom = (height + min_dim) / 2
         image = image.crop((left, top, right, bottom))
 
-        image = image.resize((size, size), Image.ANTIALIAS)
+        image = image.resize((size, size), Image.Resampling.LANCZOS)
 
         if target_format.upper() == 'JPEG' and image.mode in ('RGBA', 'LA', 'P'):
             image = image.convert('RGB')
