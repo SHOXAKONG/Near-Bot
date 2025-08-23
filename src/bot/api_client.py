@@ -173,11 +173,12 @@ def log_search_activity(profile: TelegramProfile, category_id: int, lat, lon):
 
 def get_categories(profile: TelegramProfile):
     url = f"{settings.BASE_URL}/{profile.language}/api/category/"
-    try:
-        return requests.get(url, timeout=10)
-    except requests.RequestException as e:
-        print(f"Kategoriyalarni olishda xatolik: {e}")
-        return None
+    print("API URL:", url)
+    resp = requests.get(url, timeout=10)
+    resp.raise_for_status()
+    return resp
+
+
 
 
 def search_places(profile: TelegramProfile, lat: float, lon: float, category_id: int):

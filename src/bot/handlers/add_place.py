@@ -51,37 +51,70 @@ def process_place_name_uz(message, bot):
 def process_place_name_ru(message, bot):
     profile = TelegramProfile.objects.get(tg_id=message.chat.id)
     profile.temp_data['name_ru'] = message.text
-    response = api_client.get_categories(profile)
-    if response and response.status_code == 200:
-        categories = response.json()
+
+    resp = api_client.get_categories(profile)
+    print("salom", resp, getattr(resp, "status_code", None))
+
+    # JSON ni olamiz
+    categories = []
+    try:
+        payload = resp.json()
+        if isinstance(payload, dict):
+            categories = payload.get("results", []) or []
+        elif isinstance(payload, list):
+            categories = payload
+    except ValueError as e:
+        print("JSON parse error:", e)
+
+    if categories:
+        # keyin tanlash uchun saqlab qo'yamiz
         profile.temp_data['all_categories'] = categories
         profile.step = UserSteps.PLACE_ADD_WAITING_FOR_CATEGORY
         profile.save()
+
+        # Klaviatura
         markup = keyboards.get_category_keyboard(profile, categories)
         prompt = utils.t(profile, "Joy kategoriyasini tanlang:", "Выберите категорию места:")
         bot.send_message(message.chat.id, prompt, reply_markup=markup)
-    else:
-        bot.send_message(message.chat.id,
-                         utils.t(profile, "Kategoriyalarni yuklab bo'lmadi.", "Не удалось загрузить категории."))
-        show_main_menu(message, bot)
+        return  # MUHIM: shu yerda to'xtaymiz
+
+    # Faqat muvaffaqiyatsiz bo'lsa
+    bot.send_message(
+        message.chat.id,
+        utils.t(profile, "Kategoriyalarni yuklab bo'lmadi.", "Не удалось загрузить категории.")
+    )
+    show_main_menu(message, bot)
+
+
+
 
 
 def process_place_category(message, bot):
     profile = TelegramProfile.objects.get(tg_id=message.chat.id)
     category_name = message.text
+
     category_id = next(
-        (cat['id'] for cat in profile.temp_data.get('all_categories', []) if cat['name'] == category_name), None)
+        (cat['id'] for cat in profile.temp_data.get('all_categories', []) if cat.get('name') == category_name),
+        None
+    )
+
     if not category_id:
-        bot.send_message(message.chat.id, utils.t(profile, "Iltimos, pastdagi tugmalardan birini tanlang.",
-                                                  "Пожалуйста, выберите одну из кнопок ниже."))
+        bot.send_message(
+            message.chat.id,
+            utils.t(profile, "Iltimos, pastdagi tugmalardan birini tanlang.",
+                    "Пожалуйста, выберите одну из кнопок ниже.")
+        )
         return
+
     profile.temp_data['category'] = category_id
     profile.temp_data['category_name'] = category_name
     profile.step = UserSteps.PLACE_ADD_WAITING_FOR_LOCATION
     profile.save()
+
     prompt = utils.t(profile, "Joylashuvni xaritadan belgilab yuboring:", "Отправьте геолокацию места:")
     markup = keyboards.get_location_request_keyboard(profile)
     bot.send_message(message.chat.id, prompt, reply_markup=markup)
+
 
 
 def process_place_location(message, bot):
