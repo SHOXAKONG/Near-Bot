@@ -11,14 +11,14 @@ def get_language_selection_keyboard():
 
 def get_category_keyboard(profile, categories):
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-
     for cat in categories:
-        button = telebot.types.KeyboardButton(text=cat['name'])
-        markup.add(button)
+        name = cat.get('name') or cat.get('name_ru') or str(cat.get('id'))
+        markup.add(telebot.types.KeyboardButton(text=name))
     back_button = telebot.types.KeyboardButton(text=utils.t(profile, '⬅️ Bosh menyu', '⬅️ Главное меню'))
     markup.add(back_button)
-
     return markup
+
+
 
 
 def get_main_menu_keyboard(profile):

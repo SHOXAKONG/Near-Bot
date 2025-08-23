@@ -40,10 +40,15 @@ def start_category_search(message, bot):
     response = api_client.get_categories(profile)
 
     if response and response.status_code == 200:
-        categories = response.json()
+        data = response.json()
+        categories = data.get("results", [])  # ✅ faqat resultsni olish
+        print(categories)
+
         if not categories:
-            bot.send_message(message.chat.id,
-                             utils.t(profile, "Hozircha kategoriyalar mavjud emas.", "Категории пока недоступны."))
+            bot.send_message(
+                message.chat.id,
+                utils.t(profile, "Hozircha kategoriyalar mavjud emas.", "Категории пока недоступны.")
+            )
             return
 
         profile.temp_data = {'categories': categories}
@@ -51,11 +56,17 @@ def start_category_search(message, bot):
         profile.save()
 
         markup = keyboards.get_category_keyboard(profile, categories)
-        bot.send_message(message.chat.id, utils.t(profile, "Kategoriyani tanlang:", "Выберите категорию:"),
-                         reply_markup=markup)
+        bot.send_message(
+            message.chat.id,
+            utils.t(profile, "Kategoriyani tanlang:", "Выберите категорию:"),
+            reply_markup=markup
+        )
     else:
-        bot.send_message(message.chat.id,
-                         utils.t(profile, "Kategoriyalarni yuklashda xatolik.", "Ошибка при загрузке категорий."))
+        bot.send_message(
+            message.chat.id,
+            utils.t(profile, "Kategoriyalarni yuklashda xatolik.", "Ошибка при загрузке категорий.")
+        )
+
 
 
 def process_category_selection(message, bot):
@@ -230,10 +241,14 @@ def handle_reshow_categories(call, bot):
     response = api_client.get_categories(profile)
 
     if response and response.status_code == 200:
-        categories = response.json()
+        data = response.json()
+        categories = data.get("results", [])
+
         if not categories:
-            bot.send_message(call.message.chat.id,
-                             utils.t(profile, "Hozircha kategoriyalar mavjud emas.", "Категории пока недоступны."))
+            bot.send_message(
+                call.message.chat.id,
+                utils.t(profile, "Hozircha kategoriyalar mavjud emas.", "Категории пока недоступны.")
+            )
             from .start import show_main_menu
             show_main_menu(call.message, bot)
             return
@@ -243,11 +258,16 @@ def handle_reshow_categories(call, bot):
         profile.save()
 
         markup = keyboards.get_category_keyboard(profile, categories)
-        bot.send_message(call.message.chat.id,
-                         utils.t(profile, "Boshqa kategoriyani tanlang:", "Выберите другую категорию:"),
-                         reply_markup=markup)
+        bot.send_message(
+            call.message.chat.id,
+            utils.t(profile, "Boshqa kategoriyani tanlang:", "Выберите другую категорию:"),
+            reply_markup=markup
+        )
     else:
-        bot.send_message(call.message.chat.id,
-                         utils.t(profile, "Kategoriyalarni yuklashda xatolik.", "Ошибка при загрузке категорий."))
+        bot.send_message(
+            call.message.chat.id,
+            utils.t(profile, "Kategoriyalarni yuklashda xatolik.", "Ошибка при загрузке категорий.")
+        )
         from .start import show_main_menu
         show_main_menu(call.message, bot)
+
