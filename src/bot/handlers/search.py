@@ -1,3 +1,6 @@
+from io import BytesIO
+
+import requests
 import telebot
 from ..models import TelegramProfile
 from .. import utils, keyboards, api_client
@@ -171,51 +174,57 @@ def show_paginated_place(message, bot, index=0):
     place = places[index]
     lang = profile.language
 
-    # print(place)
+    # Place name (fallback if missing)
+    name = place.get(f'name_{lang}') or place.get('name_ru') or place.get('name_uz') or "Nomsiz / Без названия"
 
-    name = place.get(f'name_{lang}')
-    if not name:
-        fallback_lang = 'ru' if lang == 'uz' else 'uz'
-        name = place.get(f'name_{fallback_lang}')
-    if not name:
-        name = utils.t(profile, 'Nomsiz', 'Без названия')
-
-    description = place.get(f'description_{lang}', '')
-    if not description:
-        fallback_lang = 'ru' if lang == 'uz' else 'uz'
-        description = place.get(f'description_{fallback_lang}', '')
-
-    # print(name, description)
+    # Description (fallback if missing)
+    description = place.get(f'description_{lang}') or place.get('description_ru') or place.get('description_uz') or place.get('description') or ""
 
     contact = place.get('contact', '')
     distance = place.get('distance')
 
+    # Build caption
     MAX_CAPTION_LENGTH = 1024
-    static_caption_part = f"<b>{name}</b>\n\n"
+    caption = f"<b>{name}</b>\n\n"
 
     if distance is not None:
-        static_caption_part += f"📍 {utils.t(profile, 'Masofa', 'Расстояние')}: {distance:.2f} km\n\n"
+        caption += f"📍 {utils.t(profile, 'Masofa', 'Расстояние')}: {distance:.2f} km\n\n"
 
     if contact:
-        static_caption_part += f"📞 {utils.t(profile, 'Kontakt', 'Контакт')}: {contact}\n\n"
+        caption += f"📞 {utils.t(profile, 'Kontakt', 'Контакт')}: {contact}\n\n"
 
-    available_length_for_desc = MAX_CAPTION_LENGTH - len(static_caption_part) - 5
-    truncated_description = description[:available_length_for_desc] + "..." if len(
-        description) > available_length_for_desc else description
-    final_caption = static_caption_part + truncated_description
+    available_len = MAX_CAPTION_LENGTH - len(caption) - 5
+    if len(description) > available_len:
+        description = description[:available_len] + "..."
+    caption += description
 
+    # Pagination keyboard
     markup = keyboards.get_place_pagination_keyboard(profile, index, len(places), place)
-    image_url = place.get('image_url')
+
+    # ✅ Use image directly from API
+    image_url = place.get("image_url")
+    print("Image from API:", image_url)
 
     if image_url:
         try:
-            bot.send_photo(message.chat.id, photo=image_url, caption=final_caption, parse_mode='HTML',
-                           reply_markup=markup)
+            # fetch image and send as file (ensures Telegram always accepts it)
+            r = requests.get(image_url, timeout=10)
+            r.raise_for_status()
+            bio = BytesIO(r.content)
+            bio.name = "photo.png"  # Telegram requires filename
+            bot.send_photo(
+                message.chat.id,
+                photo=bio,
+                caption=caption,
+                parse_mode="HTML",
+                reply_markup=markup
+            )
         except Exception as e:
-            print(f"Error sending photo, sending text instead: {e}")
-            bot.send_message(message.chat.id, final_caption, parse_mode='HTML', reply_markup=markup)
+            print(f"Telegram photo error: {e}")
+            bot.send_message(message.chat.id, caption, parse_mode="HTML", reply_markup=markup)
     else:
-        bot.send_message(message.chat.id, final_caption, parse_mode='HTML', reply_markup=markup)
+        bot.send_message(message.chat.id, caption, parse_mode="HTML", reply_markup=markup)
+
 
 
 def show_paginated_place_callback(call, bot):
