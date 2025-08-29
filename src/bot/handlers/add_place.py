@@ -53,7 +53,7 @@ def process_place_name_ru(message, bot):
     profile.temp_data['name_ru'] = message.text
 
     resp = api_client.get_categories(profile)
-    print("salom", resp, getattr(resp, "status_code", None))
+    # print("salom", resp, getattr(resp, "status_code", None))
 
     # JSON ni olamiz
     categories = []

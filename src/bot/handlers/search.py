@@ -17,13 +17,19 @@ def start_search_by_location(message, bot):
     }
 
     response = api_client.get_categories(profile)
-    if response and response.status_code == 200:
-        categories = response.json()
-        if not categories:
-            bot.send_message(message.chat.id,
-                             utils.t(profile, "Hozircha kategoriyalar mavjud emas.", "Категории пока недоступны."))
-            return
 
+    categories = []
+    if response and response.status_code == 200:
+        try:
+            payload = response.json()
+            if isinstance(payload, dict):
+                categories = payload.get("results", []) or []
+            elif isinstance(payload, list):
+                categories = payload
+        except ValueError as e:
+            print("JSON parse error:", e)
+
+    if categories:
         profile.temp_data['categories'] = categories
         profile.step = UserSteps.SEARCH_WAITING_FOR_CATEGORY
         profile.save()
@@ -33,9 +39,12 @@ def start_search_by_location(message, bot):
                          "Местоположение получено. Теперь выберите нужную категорию:")
         bot.send_message(message.chat.id, prompt, reply_markup=markup)
     else:
-        bot.send_message(message.chat.id,
-                         utils.t(profile, "Kategoriyalarni yuklashda xatolik.", "Ошибка при загрузке категорий."))
+        bot.send_message(
+            message.chat.id,
+            utils.t(profile, "Kategoriyalarni yuklashda xatolik.", "Ошибка при загрузке категорий.")
+        )
         show_main_menu(message, bot)
+
 
 
 def start_category_search(message, bot):
